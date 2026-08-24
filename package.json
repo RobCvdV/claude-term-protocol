@@ -12,7 +12,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -20,16 +23,15 @@
     "test": "vitest run",
     "prepare": "npm run build"
   },
-  "peerDependencies": {
-    "zod": "^4"
-  },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10",
-    "zod": "^4.4.3"
+    "vitest": "^4.1.10"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RobCvdV/claude-term-protocol.git"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

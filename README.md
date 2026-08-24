@@ -23,7 +23,10 @@ sides:
 { "dependencies": { "claude-term-protocol": "github:RobCvdV/claude-term-protocol#v0.1.0" } }
 ```
 
-`zod` is a peer dependency — the host and the app each bring their own.
+`zod` is a normal dependency rather than a peer one. Expo pulls zod 3 in
+transitively, and a peer range of `^4` made that an unresolvable conflict for the
+app; owning the version removes a class of install failure that has nothing to do
+with either consumer.
 
 ## Changing it
 
