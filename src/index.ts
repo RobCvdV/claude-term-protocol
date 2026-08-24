@@ -13,6 +13,15 @@ import { z } from 'zod'
 /** Bumped when a change is not backwards compatible; the host refuses mismatches. */
 export const PROTOCOL_VERSION = 1
 
+/**
+ * Prepended to the bytes a device signs, so a signature made for this protocol
+ * cannot be replayed as anything else. Both ends must agree on it exactly, which
+ * is why it lives here rather than in either of them.
+ *
+ * The signed message is `${AUTH_CONTEXT}\n${nonce}\n${deviceId}`.
+ */
+export const AUTH_CONTEXT = 'claude-term/companion/auth/v1'
+
 /** Which hook is holding a prompt open. The two differ in what they can answer:
  *  only PreToolUse's reason reaches the model (docs/companion-hook-protocol.md). */
 export const decidingHook = z.enum(['PermissionRequest', 'PreToolUse'])
