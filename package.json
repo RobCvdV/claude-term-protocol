@@ -1,15 +1,16 @@
 {
   "name": "claude-term-protocol",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Wire protocol shared by claude-term and its mobile companion",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     }
   },
   "files": [
@@ -18,7 +19,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node build.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "prepare": "npm run build"
@@ -33,5 +34,6 @@
   },
   "dependencies": {
     "zod": "^4.4.3"
-  }
+  },
+  "module": "./dist/esm/index.js"
 }
