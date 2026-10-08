@@ -1,6 +1,6 @@
 {
   "name": "claude-term-protocol",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Wire protocol shared by claude-term and its mobile companion",
   "license": "MIT",
   "type": "module",

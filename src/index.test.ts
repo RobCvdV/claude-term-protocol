@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clientFrame,
   companionSession,
+  conversationTurn,
   CONVERSATION_WINDOW,
   MAX_TURN_CHARS,
   parseClientFrame,
@@ -162,6 +163,19 @@ describe("companionSession", () => {
 
   it("still reads a session from a host that sends no activity", () => {
     expect(companionSession.parse(base)).toEqual(base);
+  });
+});
+
+describe("conversationTurn", () => {
+  it("carries a tool call's argument and a result's failure", () => {
+    const call = { role: "tool", tool: "Bash", arg: "ls", time: null, text: "command: ls" };
+    expect(conversationTurn.parse(call)).toEqual(call);
+    const out = { role: "tool", result: true, error: true, time: null, text: "boom" };
+    expect(conversationTurn.parse(out)).toEqual(out);
+  });
+
+  it("still reads a turn from a host that sends neither", () => {
+    expect(conversationTurn.safeParse({ role: "tool", time: null, text: "x" }).success).toBe(true);
   });
 });
 

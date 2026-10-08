@@ -102,6 +102,12 @@ export const conversationTurn = z.object({
   role: z.enum(["user", "claude", "tool", "thinking"]),
   /** set when the turn is a tool call */
   tool: z.string().optional(),
+  /** a tool call's main argument, as the terminal shows it: Bash(arg) */
+  arg: z.string().optional(),
+  /** the turn is a tool's output */
+  result: z.boolean().optional(),
+  /** the output of a call that failed */
+  error: z.boolean().optional(),
   time: z.string().nullable(),
   text: z.string(),
 });

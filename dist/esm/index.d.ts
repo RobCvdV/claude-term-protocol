@@ -114,6 +114,9 @@ export declare const conversationTurn: z.ZodObject<{
         thinking: "thinking";
     }>;
     tool: z.ZodOptional<z.ZodString>;
+    arg: z.ZodOptional<z.ZodString>;
+    result: z.ZodOptional<z.ZodBoolean>;
+    error: z.ZodOptional<z.ZodBoolean>;
     time: z.ZodNullable<z.ZodString>;
     text: z.ZodString;
 }, z.core.$strip>;
