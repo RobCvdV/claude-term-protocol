@@ -88,6 +88,12 @@ exports.conversationTurn = zod_1.z.object({
     role: zod_1.z.enum(["user", "claude", "tool", "thinking"]),
     /** set when the turn is a tool call */
     tool: zod_1.z.string().optional(),
+    /** a tool call's main argument, as the terminal shows it: Bash(arg) */
+    arg: zod_1.z.string().optional(),
+    /** the turn is a tool's output */
+    result: zod_1.z.boolean().optional(),
+    /** the output of a call that failed */
+    error: zod_1.z.boolean().optional(),
     time: zod_1.z.string().nullable(),
     text: zod_1.z.string(),
 });
