@@ -22,9 +22,11 @@ exports.PROTOCOL_VERSION = 1;
  * The signed message is `${AUTH_CONTEXT}\n${nonce}\n${deviceId}`.
  */
 exports.AUTH_CONTEXT = 'claude-term/companion/auth/v1';
-/** Which hook is holding a prompt open. The two differ in what they can answer:
- *  only PreToolUse's reason reaches the model (docs/companion-hook-protocol.md). */
-exports.decidingHook = zod_1.z.enum(['PermissionRequest', 'PreToolUse']);
+/** Which hook is holding a prompt open. The two settings hooks differ in what
+ *  they can answer: only PreToolUse's reason reaches the model
+ *  (docs/companion-hook-protocol.md). `mod` is claude-term's own Claude Code mod,
+ *  which can answer anything and has no time limit. */
+exports.decidingHook = zod_1.z.enum(['PermissionRequest', 'PreToolUse', 'mod']);
 exports.promptKind = zod_1.z.enum(['permission', 'question', 'plan']);
 exports.questionOption = zod_1.z.object({
     label: zod_1.z.string(),
@@ -53,7 +55,10 @@ exports.pendingPrompt = zod_1.z.object({
     toolInput: zod_1.z.record(zod_1.z.string(), zod_1.z.unknown()),
     /** a rule that would stop this being asked again, when one is safe to offer */
     suggestedRule: zod_1.z.string().nullable(),
-    createdAt: zod_1.z.number()
+    createdAt: zod_1.z.number(),
+    /** a permission asked again after its first ask went unanswered for too long;
+     *  allow runs the call once, nothing is remembered */
+    reasked: zod_1.z.boolean().optional()
 });
 exports.promptDecision = zod_1.z.discriminatedUnion('kind', [
     /** approve — the tool runs. `remember` also writes the suggested rule, so
@@ -74,7 +79,9 @@ exports.promptOutcome = zod_1.z.enum([
     /** the user answered in the terminal: the CLI closed the connection */
     'terminal',
     /** the host is shutting down */
-    'shutdown'
+    'shutdown',
+    /** unanswered too long; a permission comes back as a new, reasked prompt */
+    'expired'
 ]);
 /** One content block of one transcript record — see transcript-search.ts. */
 exports.conversationTurn = zod_1.z.object({

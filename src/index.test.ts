@@ -93,6 +93,26 @@ describe('pendingPrompt', () => {
     expect(pendingPrompt.parse(prompt)).toEqual(prompt)
   })
 
+  it('round-trips a permission the mod asked again', () => {
+    const prompt = {
+      id: 'p2',
+      tabId: 't1',
+      sessionId: 's1',
+      hook: 'mod',
+      kind: 'permission',
+      toolName: 'Bash',
+      summary: 'mkdir out',
+      questions: null,
+      plan: null,
+      planFilePath: null,
+      toolInput: { command: 'mkdir out' },
+      suggestedRule: null,
+      createdAt: 1,
+      reasked: true
+    }
+    expect(pendingPrompt.parse(prompt)).toEqual(prompt)
+  })
+
   it('insists the nullable fields are present, so a client need not guess', () => {
     expect(pendingPrompt.safeParse({ id: 'p1', tabId: 't1' }).success).toBe(false)
   })
