@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 /**
  * Everything on the wire between the host and a companion device, defined once.
  * Types are inferred from the schemas so validation and TypeScript cannot drift
@@ -17,22 +17,22 @@ export const PROTOCOL_VERSION = 1;
  *
  * The signed message is `${AUTH_CONTEXT}\n${nonce}\n${deviceId}`.
  */
-export const AUTH_CONTEXT = 'claude-term/companion/auth/v1';
+export const AUTH_CONTEXT = "claude-term/companion/auth/v1";
 /** Which hook is holding a prompt open. The two settings hooks differ in what
  *  they can answer: only PreToolUse's reason reaches the model
  *  (docs/companion-hook-protocol.md). `mod` is claude-term's own Claude Code mod,
  *  which can answer anything and has no time limit. */
-export const decidingHook = z.enum(['PermissionRequest', 'PreToolUse', 'mod']);
-export const promptKind = z.enum(['permission', 'question', 'plan']);
+export const decidingHook = z.enum(["PermissionRequest", "PreToolUse", "mod"]);
+export const promptKind = z.enum(["permission", "question", "plan"]);
 export const questionOption = z.object({
     label: z.string(),
-    description: z.string().optional()
+    description: z.string().optional(),
 });
 export const questionSpec = z.object({
     question: z.string(),
     header: z.string().optional(),
     options: z.array(questionOption),
-    multiSelect: z.boolean().optional()
+    multiSelect: z.boolean().optional(),
 });
 /** A prompt the session is blocked on, held open while a device decides. */
 export const pendingPrompt = z.object({
@@ -54,51 +54,63 @@ export const pendingPrompt = z.object({
     createdAt: z.number(),
     /** a permission asked again after its first ask went unanswered for too long;
      *  allow runs the call once, nothing is remembered */
-    reasked: z.boolean().optional()
+    reasked: z.boolean().optional(),
 });
-export const promptDecision = z.discriminatedUnion('kind', [
+export const promptDecision = z.discriminatedUnion("kind", [
     /** approve — the tool runs. `remember` also writes the suggested rule, so
      *  Claude Code stops asking; ignored when the prompt offered none. */
-    z.object({ kind: z.literal('allow'), remember: z.boolean().optional() }),
+    z.object({ kind: z.literal("allow"), remember: z.boolean().optional() }),
     /** reject. `reason` only reaches the model on a PreToolUse-parked prompt. */
-    z.object({ kind: z.literal('deny'), reason: z.string().optional() }),
+    z.object({ kind: z.literal("deny"), reason: z.string().optional() }),
     /** answer a question, or send plan feedback — `text` reaches the model */
-    z.object({ kind: z.literal('respond'), text: z.string() }),
+    z.object({ kind: z.literal("respond"), text: z.string() }),
     /** stop holding it; the terminal's own dialog is already on screen */
-    z.object({ kind: z.literal('release') })
+    z.object({ kind: z.literal("release") }),
 ]);
 /** Why a prompt stopped being pending — devices use this to retract their card. */
 export const promptOutcome = z.enum([
-    'answered',
+    "answered",
     /** handed back to the terminal, by a device or because none was listening */
-    'released',
+    "released",
     /** the user answered in the terminal: the CLI closed the connection */
-    'terminal',
+    "terminal",
     /** the host is shutting down */
-    'shutdown',
+    "shutdown",
     /** unanswered too long; a permission comes back as a new, reasked prompt */
-    'expired'
+    "expired",
 ]);
 /** One content block of one transcript record — see transcript-search.ts. */
 export const conversationTurn = z.object({
-    role: z.enum(['user', 'claude', 'tool', 'thinking']),
+    role: z.enum(["user", "claude", "tool", "thinking"]),
     /** set when the turn is a tool call */
     tool: z.string().optional(),
     time: z.string().nullable(),
-    text: z.string()
+    text: z.string(),
 });
 /** A turn longer than this is cut — a phone is not the place to read 200KB. */
 export const MAX_TURN_CHARS = 4_000;
 /** How much history a fresh subscription is handed. */
 export const CONVERSATION_WINDOW = 40;
 export const activityState = z.enum([
-    'starting',
-    'busy',
-    'idle',
-    'needs-attention',
-    'ended',
-    'exited'
+    "starting",
+    "busy",
+    "idle",
+    "needs-attention",
+    "ended",
+    "exited",
 ]);
+/** What a busy session is doing right now, as its terminal shows it. */
+export const sessionDoing = z.object({
+    /** the spinner's word ("Tinkering"), or the text drawn in its place */
+    word: z.string(),
+    /** requesting, thinking, responding, tool-input, tool-use — kept open for new ones */
+    mode: z.string(),
+    /** the tool running now, and what it runs on (the command, the file, …) */
+    tool: z.string().nullable(),
+    detail: z.string().nullable(),
+    /** tool calls finished so far this turn */
+    steps: z.number(),
+});
 /** One of the host's tabs, as a phone needs to see it. */
 export const companionSession = z.object({
     tabId: z.string(),
@@ -112,13 +124,15 @@ export const companionSession = z.object({
     branch: z.string().nullable(),
     model: z.string().nullable(),
     /** ids of prompts this session is currently blocked on */
-    pendingPromptIds: z.array(z.string())
+    pendingPromptIds: z.array(z.string()),
+    /** while a turn runs; absent otherwise, and from hosts older than 0.6 */
+    doing: sessionDoing.nullable().optional(),
 });
 // ---------------------------------------------------------------- device → host
-export const clientFrame = z.discriminatedUnion('type', [
+export const clientFrame = z.discriminatedUnion("type", [
     /** Enrol using a code the host is showing right now. */
     z.object({
-        type: z.literal('pair'),
+        type: z.literal("pair"),
         protocol: z.number(),
         deviceId: z.string().min(8).max(128),
         name: z.string().min(1).max(64),
@@ -127,32 +141,40 @@ export const clientFrame = z.discriminatedUnion('type', [
         code: z.string().min(1).max(32),
         /** proof the device holds the matching private key */
         signature: z.string().min(1).max(512),
-        pushToken: z.string().max(256).optional()
+        pushToken: z.string().max(256).optional(),
     }),
     /** Answer the host's challenge with a key it already trusts. */
     z.object({
-        type: z.literal('auth'),
+        type: z.literal("auth"),
         protocol: z.number(),
         deviceId: z.string().min(8).max(128),
         signature: z.string().min(1).max(512),
-        pushToken: z.string().max(256).optional()
+        pushToken: z.string().max(256).optional(),
     }),
-    z.object({ type: z.literal('sessions') }),
+    z.object({ type: z.literal("sessions") }),
     /** Follow a session's conversation. One session at a time, per device. */
-    z.object({ type: z.literal('subscribe'), tabId: z.string() }),
-    z.object({ type: z.literal('unsubscribe') }),
+    z.object({ type: z.literal("subscribe"), tabId: z.string() }),
+    z.object({ type: z.literal("unsubscribe") }),
     /** What is on that tab's screen right now — a snapshot, not a stream. */
-    z.object({ type: z.literal('screen'), tabId: z.string() }),
-    z.object({ type: z.literal('decide'), promptId: z.string(), decision: promptDecision }),
+    z.object({ type: z.literal("screen"), tabId: z.string() }),
+    z.object({
+        type: z.literal("decide"),
+        promptId: z.string(),
+        decision: promptDecision,
+    }),
     /** Send a new prompt to a session's prompt box. */
-    z.object({ type: z.literal('submit'), tabId: z.string(), text: z.string().min(1).max(32_000) }),
+    z.object({
+        type: z.literal("submit"),
+        tabId: z.string(),
+        text: z.string().min(1).max(32_000),
+    }),
     /** Lets the host suppress a push for a session the device is already looking at. */
     z.object({
-        type: z.literal('appState'),
+        type: z.literal("appState"),
         foreground: z.boolean(),
-        tabId: z.string().nullable().optional()
+        tabId: z.string().nullable().optional(),
     }),
-    z.object({ type: z.literal('ping') })
+    z.object({ type: z.literal("ping") }),
 ]);
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
 export function parseClientFrame(raw) {
