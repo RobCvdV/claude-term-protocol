@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientFrame = exports.companionSession = exports.activityState = exports.CONVERSATION_WINDOW = exports.MAX_TURN_CHARS = exports.conversationTurn = exports.promptOutcome = exports.promptDecision = exports.pendingPrompt = exports.questionSpec = exports.questionOption = exports.promptKind = exports.decidingHook = exports.AUTH_CONTEXT = exports.PROTOCOL_VERSION = void 0;
+exports.clientFrame = exports.companionSession = exports.sessionDoing = exports.activityState = exports.CONVERSATION_WINDOW = exports.MAX_TURN_CHARS = exports.conversationTurn = exports.promptOutcome = exports.promptDecision = exports.pendingPrompt = exports.questionSpec = exports.questionOption = exports.promptKind = exports.decidingHook = exports.AUTH_CONTEXT = exports.PROTOCOL_VERSION = void 0;
 exports.parseClientFrame = parseClientFrame;
 const zod_1 = require("zod");
 /**
@@ -21,22 +21,22 @@ exports.PROTOCOL_VERSION = 1;
  *
  * The signed message is `${AUTH_CONTEXT}\n${nonce}\n${deviceId}`.
  */
-exports.AUTH_CONTEXT = 'claude-term/companion/auth/v1';
+exports.AUTH_CONTEXT = "claude-term/companion/auth/v1";
 /** Which hook is holding a prompt open. The two settings hooks differ in what
  *  they can answer: only PreToolUse's reason reaches the model
  *  (docs/companion-hook-protocol.md). `mod` is claude-term's own Claude Code mod,
  *  which can answer anything and has no time limit. */
-exports.decidingHook = zod_1.z.enum(['PermissionRequest', 'PreToolUse', 'mod']);
-exports.promptKind = zod_1.z.enum(['permission', 'question', 'plan']);
+exports.decidingHook = zod_1.z.enum(["PermissionRequest", "PreToolUse", "mod"]);
+exports.promptKind = zod_1.z.enum(["permission", "question", "plan"]);
 exports.questionOption = zod_1.z.object({
     label: zod_1.z.string(),
-    description: zod_1.z.string().optional()
+    description: zod_1.z.string().optional(),
 });
 exports.questionSpec = zod_1.z.object({
     question: zod_1.z.string(),
     header: zod_1.z.string().optional(),
     options: zod_1.z.array(exports.questionOption),
-    multiSelect: zod_1.z.boolean().optional()
+    multiSelect: zod_1.z.boolean().optional(),
 });
 /** A prompt the session is blocked on, held open while a device decides. */
 exports.pendingPrompt = zod_1.z.object({
@@ -58,51 +58,63 @@ exports.pendingPrompt = zod_1.z.object({
     createdAt: zod_1.z.number(),
     /** a permission asked again after its first ask went unanswered for too long;
      *  allow runs the call once, nothing is remembered */
-    reasked: zod_1.z.boolean().optional()
+    reasked: zod_1.z.boolean().optional(),
 });
-exports.promptDecision = zod_1.z.discriminatedUnion('kind', [
+exports.promptDecision = zod_1.z.discriminatedUnion("kind", [
     /** approve — the tool runs. `remember` also writes the suggested rule, so
      *  Claude Code stops asking; ignored when the prompt offered none. */
-    zod_1.z.object({ kind: zod_1.z.literal('allow'), remember: zod_1.z.boolean().optional() }),
+    zod_1.z.object({ kind: zod_1.z.literal("allow"), remember: zod_1.z.boolean().optional() }),
     /** reject. `reason` only reaches the model on a PreToolUse-parked prompt. */
-    zod_1.z.object({ kind: zod_1.z.literal('deny'), reason: zod_1.z.string().optional() }),
+    zod_1.z.object({ kind: zod_1.z.literal("deny"), reason: zod_1.z.string().optional() }),
     /** answer a question, or send plan feedback — `text` reaches the model */
-    zod_1.z.object({ kind: zod_1.z.literal('respond'), text: zod_1.z.string() }),
+    zod_1.z.object({ kind: zod_1.z.literal("respond"), text: zod_1.z.string() }),
     /** stop holding it; the terminal's own dialog is already on screen */
-    zod_1.z.object({ kind: zod_1.z.literal('release') })
+    zod_1.z.object({ kind: zod_1.z.literal("release") }),
 ]);
 /** Why a prompt stopped being pending — devices use this to retract their card. */
 exports.promptOutcome = zod_1.z.enum([
-    'answered',
+    "answered",
     /** handed back to the terminal, by a device or because none was listening */
-    'released',
+    "released",
     /** the user answered in the terminal: the CLI closed the connection */
-    'terminal',
+    "terminal",
     /** the host is shutting down */
-    'shutdown',
+    "shutdown",
     /** unanswered too long; a permission comes back as a new, reasked prompt */
-    'expired'
+    "expired",
 ]);
 /** One content block of one transcript record — see transcript-search.ts. */
 exports.conversationTurn = zod_1.z.object({
-    role: zod_1.z.enum(['user', 'claude', 'tool', 'thinking']),
+    role: zod_1.z.enum(["user", "claude", "tool", "thinking"]),
     /** set when the turn is a tool call */
     tool: zod_1.z.string().optional(),
     time: zod_1.z.string().nullable(),
-    text: zod_1.z.string()
+    text: zod_1.z.string(),
 });
 /** A turn longer than this is cut — a phone is not the place to read 200KB. */
 exports.MAX_TURN_CHARS = 4_000;
 /** How much history a fresh subscription is handed. */
 exports.CONVERSATION_WINDOW = 40;
 exports.activityState = zod_1.z.enum([
-    'starting',
-    'busy',
-    'idle',
-    'needs-attention',
-    'ended',
-    'exited'
+    "starting",
+    "busy",
+    "idle",
+    "needs-attention",
+    "ended",
+    "exited",
 ]);
+/** What a busy session is doing right now, as its terminal shows it. */
+exports.sessionDoing = zod_1.z.object({
+    /** the spinner's word ("Tinkering"), or the text drawn in its place */
+    word: zod_1.z.string(),
+    /** requesting, thinking, responding, tool-input, tool-use — kept open for new ones */
+    mode: zod_1.z.string(),
+    /** the tool running now, and what it runs on (the command, the file, …) */
+    tool: zod_1.z.string().nullable(),
+    detail: zod_1.z.string().nullable(),
+    /** tool calls finished so far this turn */
+    steps: zod_1.z.number(),
+});
 /** One of the host's tabs, as a phone needs to see it. */
 exports.companionSession = zod_1.z.object({
     tabId: zod_1.z.string(),
@@ -116,13 +128,15 @@ exports.companionSession = zod_1.z.object({
     branch: zod_1.z.string().nullable(),
     model: zod_1.z.string().nullable(),
     /** ids of prompts this session is currently blocked on */
-    pendingPromptIds: zod_1.z.array(zod_1.z.string())
+    pendingPromptIds: zod_1.z.array(zod_1.z.string()),
+    /** while a turn runs; absent otherwise, and from hosts older than 0.6 */
+    doing: exports.sessionDoing.nullable().optional(),
 });
 // ---------------------------------------------------------------- device → host
-exports.clientFrame = zod_1.z.discriminatedUnion('type', [
+exports.clientFrame = zod_1.z.discriminatedUnion("type", [
     /** Enrol using a code the host is showing right now. */
     zod_1.z.object({
-        type: zod_1.z.literal('pair'),
+        type: zod_1.z.literal("pair"),
         protocol: zod_1.z.number(),
         deviceId: zod_1.z.string().min(8).max(128),
         name: zod_1.z.string().min(1).max(64),
@@ -131,32 +145,40 @@ exports.clientFrame = zod_1.z.discriminatedUnion('type', [
         code: zod_1.z.string().min(1).max(32),
         /** proof the device holds the matching private key */
         signature: zod_1.z.string().min(1).max(512),
-        pushToken: zod_1.z.string().max(256).optional()
+        pushToken: zod_1.z.string().max(256).optional(),
     }),
     /** Answer the host's challenge with a key it already trusts. */
     zod_1.z.object({
-        type: zod_1.z.literal('auth'),
+        type: zod_1.z.literal("auth"),
         protocol: zod_1.z.number(),
         deviceId: zod_1.z.string().min(8).max(128),
         signature: zod_1.z.string().min(1).max(512),
-        pushToken: zod_1.z.string().max(256).optional()
+        pushToken: zod_1.z.string().max(256).optional(),
     }),
-    zod_1.z.object({ type: zod_1.z.literal('sessions') }),
+    zod_1.z.object({ type: zod_1.z.literal("sessions") }),
     /** Follow a session's conversation. One session at a time, per device. */
-    zod_1.z.object({ type: zod_1.z.literal('subscribe'), tabId: zod_1.z.string() }),
-    zod_1.z.object({ type: zod_1.z.literal('unsubscribe') }),
+    zod_1.z.object({ type: zod_1.z.literal("subscribe"), tabId: zod_1.z.string() }),
+    zod_1.z.object({ type: zod_1.z.literal("unsubscribe") }),
     /** What is on that tab's screen right now — a snapshot, not a stream. */
-    zod_1.z.object({ type: zod_1.z.literal('screen'), tabId: zod_1.z.string() }),
-    zod_1.z.object({ type: zod_1.z.literal('decide'), promptId: zod_1.z.string(), decision: exports.promptDecision }),
+    zod_1.z.object({ type: zod_1.z.literal("screen"), tabId: zod_1.z.string() }),
+    zod_1.z.object({
+        type: zod_1.z.literal("decide"),
+        promptId: zod_1.z.string(),
+        decision: exports.promptDecision,
+    }),
     /** Send a new prompt to a session's prompt box. */
-    zod_1.z.object({ type: zod_1.z.literal('submit'), tabId: zod_1.z.string(), text: zod_1.z.string().min(1).max(32_000) }),
+    zod_1.z.object({
+        type: zod_1.z.literal("submit"),
+        tabId: zod_1.z.string(),
+        text: zod_1.z.string().min(1).max(32_000),
+    }),
     /** Lets the host suppress a push for a session the device is already looking at. */
     zod_1.z.object({
-        type: zod_1.z.literal('appState'),
+        type: zod_1.z.literal("appState"),
         foreground: zod_1.z.boolean(),
-        tabId: zod_1.z.string().nullable().optional()
+        tabId: zod_1.z.string().nullable().optional(),
     }),
-    zod_1.z.object({ type: zod_1.z.literal('ping') })
+    zod_1.z.object({ type: zod_1.z.literal("ping") }),
 ]);
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
 function parseClientFrame(raw) {

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 /**
  * Everything on the wire between the host and a companion device, defined once.
  * Types are inferred from the schemas so validation and TypeScript cannot drift
@@ -130,6 +130,15 @@ export declare const activityState: z.ZodEnum<{
     ended: "ended";
     exited: "exited";
 }>;
+/** What a busy session is doing right now, as its terminal shows it. */
+export declare const sessionDoing: z.ZodObject<{
+    word: z.ZodString;
+    mode: z.ZodString;
+    tool: z.ZodNullable<z.ZodString>;
+    detail: z.ZodNullable<z.ZodString>;
+    steps: z.ZodNumber;
+}, z.core.$strip>;
+export type SessionDoing = z.infer<typeof sessionDoing>;
 /** One of the host's tabs, as a phone needs to see it. */
 export declare const companionSession: z.ZodObject<{
     tabId: z.ZodString;
@@ -149,6 +158,13 @@ export declare const companionSession: z.ZodObject<{
     branch: z.ZodNullable<z.ZodString>;
     model: z.ZodNullable<z.ZodString>;
     pendingPromptIds: z.ZodArray<z.ZodString>;
+    doing: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        word: z.ZodString;
+        mode: z.ZodString;
+        tool: z.ZodNullable<z.ZodString>;
+        detail: z.ZodNullable<z.ZodString>;
+        steps: z.ZodNumber;
+    }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type CompanionSession = z.infer<typeof companionSession>;
 export declare const clientFrame: z.ZodDiscriminatedUnion<[z.ZodObject<{
@@ -206,32 +222,32 @@ export type ClientFrame = z.infer<typeof clientFrame>;
 export type ServerFrame = 
 /** Sent the moment a socket opens; nothing else is accepted until it is answered. */
 {
-    type: 'challenge';
+    type: "challenge";
     protocol: number;
     nonce: string;
     hostName: string;
     paired: boolean;
 } | {
-    type: 'ready';
+    type: "ready";
     deviceId: string;
     name: string;
     sessions: CompanionSession[];
 } | {
-    type: 'error';
+    type: "error";
     code: CompanionErrorCode;
     message: string;
 } | {
-    type: 'sessions';
+    type: "sessions";
     sessions: CompanionSession[];
 }
 /** One session changed — sent instead of the whole list. */
  | {
-    type: 'session';
+    type: "session";
     session: CompanionSession;
 }
 /** The window a fresh subscription starts from, oldest turn first. */
  | {
-    type: 'conversation';
+    type: "conversation";
     tabId: string;
     turns: ConversationTurn[];
     cursor: number;
@@ -240,46 +256,46 @@ export type ServerFrame =
 }
 /** Turns appended since `cursor` was issued. */
  | {
-    type: 'conversationDelta';
+    type: "conversationDelta";
     tabId: string;
     turns: ConversationTurn[];
     cursor: number;
 }
 /** The tab's visible terminal rows, top first. */
  | {
-    type: 'screen';
+    type: "screen";
     tabId: string;
     rows: string[];
     at: number;
 } | {
-    type: 'prompt';
+    type: "prompt";
     prompt: PendingPrompt;
 } | {
-    type: 'promptResolved';
+    type: "promptResolved";
     promptId: string;
     tabId: string;
     outcome: PromptOutcome;
 }
 /** A submitted prompt is waiting for the session to stop holding a dialog. */
  | {
-    type: 'submitQueued';
+    type: "submitQueued";
     tabId: string;
     position: number;
 }
 /** A queued prompt has now gone through. */
  | {
-    type: 'submitDelivered';
+    type: "submitDelivered";
     tabId: string;
 }
 /** `remember` wrote a rule (or could not). */
  | {
-    type: 'ruleAdded';
+    type: "ruleAdded";
     tabId: string;
     rule: string;
     added: boolean;
 } | {
-    type: 'pong';
+    type: "pong";
 };
-export type CompanionErrorCode = 'protocol' | 'unauthenticated' | 'bad-pairing-code' | 'bad-signature' | 'unknown-device' | 'no-such-session' | 'no-transcript' | 'no-screen' | 'no-such-prompt' | 'undeliverable' | 'malformed';
+export type CompanionErrorCode = "protocol" | "unauthenticated" | "bad-pairing-code" | "bad-signature" | "unknown-device" | "no-such-session" | "no-transcript" | "no-screen" | "no-such-prompt" | "undeliverable" | "malformed";
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
 export declare function parseClientFrame(raw: string): ClientFrame | null;
