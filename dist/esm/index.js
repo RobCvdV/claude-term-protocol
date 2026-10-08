@@ -18,9 +18,11 @@ export const PROTOCOL_VERSION = 1;
  * The signed message is `${AUTH_CONTEXT}\n${nonce}\n${deviceId}`.
  */
 export const AUTH_CONTEXT = 'claude-term/companion/auth/v1';
-/** Which hook is holding a prompt open. The two differ in what they can answer:
- *  only PreToolUse's reason reaches the model (docs/companion-hook-protocol.md). */
-export const decidingHook = z.enum(['PermissionRequest', 'PreToolUse']);
+/** Which hook is holding a prompt open. The two settings hooks differ in what
+ *  they can answer: only PreToolUse's reason reaches the model
+ *  (docs/companion-hook-protocol.md). `mod` is claude-term's own Claude Code mod,
+ *  which can answer anything and has no time limit. */
+export const decidingHook = z.enum(['PermissionRequest', 'PreToolUse', 'mod']);
 export const promptKind = z.enum(['permission', 'question', 'plan']);
 export const questionOption = z.object({
     label: z.string(),
@@ -49,7 +51,10 @@ export const pendingPrompt = z.object({
     toolInput: z.record(z.string(), z.unknown()),
     /** a rule that would stop this being asked again, when one is safe to offer */
     suggestedRule: z.string().nullable(),
-    createdAt: z.number()
+    createdAt: z.number(),
+    /** a permission asked again after its first ask went unanswered for too long;
+     *  allow runs the call once, nothing is remembered */
+    reasked: z.boolean().optional()
 });
 export const promptDecision = z.discriminatedUnion('kind', [
     /** approve — the tool runs. `remember` also writes the suggested rule, so
@@ -70,7 +75,9 @@ export const promptOutcome = z.enum([
     /** the user answered in the terminal: the CLI closed the connection */
     'terminal',
     /** the host is shutting down */
-    'shutdown'
+    'shutdown',
+    /** unanswered too long; a permission comes back as a new, reasked prompt */
+    'expired'
 ]);
 /** One content block of one transcript record — see transcript-search.ts. */
 export const conversationTurn = z.object({

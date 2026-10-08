@@ -18,11 +18,14 @@ export declare const PROTOCOL_VERSION = 1;
  * The signed message is `${AUTH_CONTEXT}\n${nonce}\n${deviceId}`.
  */
 export declare const AUTH_CONTEXT = "claude-term/companion/auth/v1";
-/** Which hook is holding a prompt open. The two differ in what they can answer:
- *  only PreToolUse's reason reaches the model (docs/companion-hook-protocol.md). */
+/** Which hook is holding a prompt open. The two settings hooks differ in what
+ *  they can answer: only PreToolUse's reason reaches the model
+ *  (docs/companion-hook-protocol.md). `mod` is claude-term's own Claude Code mod,
+ *  which can answer anything and has no time limit. */
 export declare const decidingHook: z.ZodEnum<{
     PermissionRequest: "PermissionRequest";
     PreToolUse: "PreToolUse";
+    mod: "mod";
 }>;
 export type DecidingHook = z.infer<typeof decidingHook>;
 export declare const promptKind: z.ZodEnum<{
@@ -54,6 +57,7 @@ export declare const pendingPrompt: z.ZodObject<{
     hook: z.ZodEnum<{
         PermissionRequest: "PermissionRequest";
         PreToolUse: "PreToolUse";
+        mod: "mod";
     }>;
     kind: z.ZodEnum<{
         permission: "permission";
@@ -76,6 +80,7 @@ export declare const pendingPrompt: z.ZodObject<{
     toolInput: z.ZodRecord<z.ZodString, z.ZodUnknown>;
     suggestedRule: z.ZodNullable<z.ZodString>;
     createdAt: z.ZodNumber;
+    reasked: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type PendingPrompt = z.infer<typeof pendingPrompt>;
 export declare const promptDecision: z.ZodDiscriminatedUnion<[z.ZodObject<{
@@ -97,6 +102,7 @@ export declare const promptOutcome: z.ZodEnum<{
     released: "released";
     terminal: "terminal";
     shutdown: "shutdown";
+    expired: "expired";
 }>;
 export type PromptOutcome = z.infer<typeof promptOutcome>;
 /** One content block of one transcript record — see transcript-search.ts. */
