@@ -161,6 +161,14 @@ describe("companionSession", () => {
     });
   });
 
+  it("carries the work still running outside a turn", () => {
+    const running = [
+      { kind: "shell", label: "npm run dev", since: 1_700_000_000_000 },
+      { kind: "monitor", label: "watch the agent job", since: null },
+    ];
+    expect(companionSession.parse({ ...base, running })).toEqual({ ...base, running });
+  });
+
   it("still reads a session from a host that sends no activity", () => {
     expect(companionSession.parse(base)).toEqual(base);
   });

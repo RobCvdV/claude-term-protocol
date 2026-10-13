@@ -141,6 +141,19 @@ export const sessionDoing = z.object({
 });
 export type SessionDoing = z.infer<typeof sessionDoing>;
 
+/** Work that keeps a tab busy outside a turn. */
+export const runningWork = z.object({
+  /** `shell` is a command running in the tab's own shell; anything else is a
+   *  background task a Claude session left running (`shell`, `monitor`,
+   *  `subagent`, `workflow`, … as Claude Code names them) — kept open */
+  kind: z.string(),
+  /** the command line, or the task's description */
+  label: z.string(),
+  /** epoch ms it started, when known */
+  since: z.number().nullable(),
+});
+export type RunningWork = z.infer<typeof runningWork>;
+
 /** One of the host's tabs, as a phone needs to see it. */
 export const companionSession = z.object({
   tabId: z.string(),
@@ -157,6 +170,8 @@ export const companionSession = z.object({
   pendingPromptIds: z.array(z.string()),
   /** while a turn runs; absent otherwise, and from hosts older than 0.6 */
   doing: sessionDoing.nullable().optional(),
+  /** a shell command or background tasks still running; absent from hosts older than 0.8 */
+  running: z.array(runningWork).optional(),
 });
 export type CompanionSession = z.infer<typeof companionSession>;
 

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientFrame = exports.companionSession = exports.sessionDoing = exports.activityState = exports.CONVERSATION_WINDOW = exports.MAX_TURN_CHARS = exports.conversationTurn = exports.promptOutcome = exports.promptDecision = exports.pendingPrompt = exports.questionSpec = exports.questionOption = exports.promptKind = exports.decidingHook = exports.AUTH_CONTEXT = exports.PROTOCOL_VERSION = void 0;
+exports.clientFrame = exports.companionSession = exports.runningWork = exports.sessionDoing = exports.activityState = exports.CONVERSATION_WINDOW = exports.MAX_TURN_CHARS = exports.conversationTurn = exports.promptOutcome = exports.promptDecision = exports.pendingPrompt = exports.questionSpec = exports.questionOption = exports.promptKind = exports.decidingHook = exports.AUTH_CONTEXT = exports.PROTOCOL_VERSION = void 0;
 exports.parseClientFrame = parseClientFrame;
 const zod_1 = require("zod");
 /**
@@ -121,6 +121,17 @@ exports.sessionDoing = zod_1.z.object({
     /** tool calls finished so far this turn */
     steps: zod_1.z.number(),
 });
+/** Work that keeps a tab busy outside a turn. */
+exports.runningWork = zod_1.z.object({
+    /** `shell` is a command running in the tab's own shell; anything else is a
+     *  background task a Claude session left running (`shell`, `monitor`,
+     *  `subagent`, `workflow`, … as Claude Code names them) — kept open */
+    kind: zod_1.z.string(),
+    /** the command line, or the task's description */
+    label: zod_1.z.string(),
+    /** epoch ms it started, when known */
+    since: zod_1.z.number().nullable(),
+});
 /** One of the host's tabs, as a phone needs to see it. */
 exports.companionSession = zod_1.z.object({
     tabId: zod_1.z.string(),
@@ -137,6 +148,8 @@ exports.companionSession = zod_1.z.object({
     pendingPromptIds: zod_1.z.array(zod_1.z.string()),
     /** while a turn runs; absent otherwise, and from hosts older than 0.6 */
     doing: exports.sessionDoing.nullable().optional(),
+    /** a shell command or background tasks still running; absent from hosts older than 0.8 */
+    running: zod_1.z.array(exports.runningWork).optional(),
 });
 // ---------------------------------------------------------------- device → host
 exports.clientFrame = zod_1.z.discriminatedUnion("type", [
