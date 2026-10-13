@@ -142,6 +142,13 @@ export declare const sessionDoing: z.ZodObject<{
     steps: z.ZodNumber;
 }, z.core.$strip>;
 export type SessionDoing = z.infer<typeof sessionDoing>;
+/** Work that keeps a tab busy outside a turn. */
+export declare const runningWork: z.ZodObject<{
+    kind: z.ZodString;
+    label: z.ZodString;
+    since: z.ZodNullable<z.ZodNumber>;
+}, z.core.$strip>;
+export type RunningWork = z.infer<typeof runningWork>;
 /** One of the host's tabs, as a phone needs to see it. */
 export declare const companionSession: z.ZodObject<{
     tabId: z.ZodString;
@@ -167,6 +174,11 @@ export declare const companionSession: z.ZodObject<{
         tool: z.ZodNullable<z.ZodString>;
         detail: z.ZodNullable<z.ZodString>;
         steps: z.ZodNumber;
+    }, z.core.$strip>>>;
+    running: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        kind: z.ZodString;
+        label: z.ZodString;
+        since: z.ZodNullable<z.ZodNumber>;
     }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type CompanionSession = z.infer<typeof companionSession>;
