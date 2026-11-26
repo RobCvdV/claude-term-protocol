@@ -283,7 +283,26 @@ export type ServerFrame =
   | { type: "submitDelivered"; tabId: string }
   /** `remember` wrote a rule (or could not). */
   | { type: "ruleAdded"; tabId: string; rule: string; added: boolean }
+  /** The user asked, from a session, for an assistant device (Claudia) to look
+   *  into something: `status` is that session's state, `waiting` every session
+   *  waiting on the user, `board` the Work board items that need them (in
+   *  `board`). Devices that don't know it ignore it. */
+  | { type: "ask"; ask: AskKind; tabId: string; board?: BoardDigestItem[] }
   | { type: "pong" };
+
+export type AskKind = "status" | "waiting" | "board";
+
+/** One Work board item that needs the user, as an assistant should hear about it. */
+export interface BoardDigestItem {
+  id: string;
+  /** e.g. "MTX-11635 RoadLink: concurrent GET /planning requests…" */
+  title: string;
+  /** why it needs the user, most pressing first: "build failed", "ready to merge", … */
+  reasons: string[];
+  url: string;
+  /** the tab working on it, when one is open */
+  tabId: string | null;
+}
 
 export type CompanionErrorCode =
   | "protocol"
