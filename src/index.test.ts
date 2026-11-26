@@ -37,6 +37,12 @@ describe("parseClientFrame", () => {
     }
   });
 
+  it("accepts a focus request for a tab", () => {
+    const focus = { type: "focus", tabId: "t1" };
+    expect(parseClientFrame(JSON.stringify(focus))).toEqual(focus);
+    expect(parseClientFrame(JSON.stringify({ type: "focus" }))).toBeNull();
+  });
+
   it("refuses a frame too large to be a real one", () => {
     const huge = JSON.stringify({
       type: "submit",

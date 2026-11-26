@@ -150,6 +150,8 @@ exports.companionSession = zod_1.z.object({
     doing: exports.sessionDoing.nullable().optional(),
     /** a shell command or background tasks still running; absent from hosts older than 0.8 */
     running: zod_1.z.array(exports.runningWork).optional(),
+    /** the tab's name as its tab bar shows it; absent from hosts older than 0.9 */
+    title: zod_1.z.string().optional(),
 });
 // ---------------------------------------------------------------- device → host
 exports.clientFrame = zod_1.z.discriminatedUnion("type", [
@@ -197,6 +199,9 @@ exports.clientFrame = zod_1.z.discriminatedUnion("type", [
         foreground: zod_1.z.boolean(),
         tabId: zod_1.z.string().nullable().optional(),
     }),
+    /** Bring that tab to the front on the host, to answer it there. Hosts older
+     *  than 0.9 refuse it as malformed. */
+    zod_1.z.object({ type: zod_1.z.literal("focus"), tabId: zod_1.z.string() }),
     zod_1.z.object({ type: zod_1.z.literal("ping") }),
 ]);
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
