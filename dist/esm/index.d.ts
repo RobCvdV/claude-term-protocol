@@ -180,6 +180,7 @@ export declare const companionSession: z.ZodObject<{
         label: z.ZodString;
         since: z.ZodNullable<z.ZodNumber>;
     }, z.core.$strip>>>;
+    title: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export type CompanionSession = z.infer<typeof companionSession>;
 export declare const clientFrame: z.ZodDiscriminatedUnion<[z.ZodObject<{
@@ -230,6 +231,9 @@ export declare const clientFrame: z.ZodDiscriminatedUnion<[z.ZodObject<{
     type: z.ZodLiteral<"appState">;
     foreground: z.ZodBoolean;
     tabId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, z.core.$strip>, z.ZodObject<{
+    type: z.ZodLiteral<"focus">;
+    tabId: z.ZodString;
 }, z.core.$strip>, z.ZodObject<{
     type: z.ZodLiteral<"ping">;
 }, z.core.$strip>], "type">;

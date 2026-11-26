@@ -146,6 +146,8 @@ export const companionSession = z.object({
     doing: sessionDoing.nullable().optional(),
     /** a shell command or background tasks still running; absent from hosts older than 0.8 */
     running: z.array(runningWork).optional(),
+    /** the tab's name as its tab bar shows it; absent from hosts older than 0.9 */
+    title: z.string().optional(),
 });
 // ---------------------------------------------------------------- device → host
 export const clientFrame = z.discriminatedUnion("type", [
@@ -193,6 +195,9 @@ export const clientFrame = z.discriminatedUnion("type", [
         foreground: z.boolean(),
         tabId: z.string().nullable().optional(),
     }),
+    /** Bring that tab to the front on the host, to answer it there. Hosts older
+     *  than 0.9 refuse it as malformed. */
+    z.object({ type: z.literal("focus"), tabId: z.string() }),
     z.object({ type: z.literal("ping") }),
 ]);
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
