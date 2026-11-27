@@ -43,6 +43,18 @@ describe("parseClientFrame", () => {
     expect(parseClientFrame(JSON.stringify({ type: "focus" }))).toBeNull();
   });
 
+  it("accepts the assistant requests: board, projects, openSession", () => {
+    for (const frame of [
+      { type: "board" },
+      { type: "projects" },
+      { type: "openSession", requestId: "r1", folder: "/src/app", prompt: "Add tests" },
+      { type: "openSession", itemId: "MTX-1" },
+    ]) {
+      expect(parseClientFrame(JSON.stringify(frame))).toEqual(frame);
+    }
+    expect(parseClientFrame(JSON.stringify({ type: "openSession", folder: "" }))).toBeNull();
+  });
+
   it("refuses a frame too large to be a real one", () => {
     const huge = JSON.stringify({
       type: "submit",

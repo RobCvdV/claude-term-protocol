@@ -198,6 +198,19 @@ export const clientFrame = z.discriminatedUnion("type", [
     /** Bring that tab to the front on the host, to answer it there. Hosts older
      *  than 0.9 refuse it as malformed. */
     z.object({ type: z.literal("focus"), tabId: z.string() }),
+    /** The whole Work board, every lane. Hosts older than 0.11 refuse it as malformed. */
+    z.object({ type: z.literal("board") }),
+    /** The local project folders a session can start in (0.11). */
+    z.object({ type: z.literal("projects") }),
+    /** Start a new session (0.11): in a project folder with a first prompt, or for a
+     *  Work board item the way its ▶ session does. `requestId` comes back on the reply. */
+    z.object({
+        type: z.literal("openSession"),
+        requestId: z.string().max(64).optional(),
+        folder: z.string().min(1).max(1024).optional(),
+        itemId: z.string().min(1).max(256).optional(),
+        prompt: z.string().min(1).max(32_000).optional(),
+    }),
     z.object({ type: z.literal("ping") }),
 ]);
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
