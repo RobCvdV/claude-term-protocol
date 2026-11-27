@@ -227,6 +227,19 @@ export const clientFrame = z.discriminatedUnion("type", [
   /** Bring that tab to the front on the host, to answer it there. Hosts older
    *  than 0.9 refuse it as malformed. */
   z.object({ type: z.literal("focus"), tabId: z.string() }),
+  /** The whole Work board, every lane. Hosts older than 0.11 refuse it as malformed. */
+  z.object({ type: z.literal("board") }),
+  /** The local project folders a session can start in (0.11). */
+  z.object({ type: z.literal("projects") }),
+  /** Start a new session (0.11): in a project folder with a first prompt, or for a
+   *  Work board item the way its ▶ session does. `requestId` comes back on the reply. */
+  z.object({
+    type: z.literal("openSession"),
+    requestId: z.string().max(64).optional(),
+    folder: z.string().min(1).max(1024).optional(),
+    itemId: z.string().min(1).max(256).optional(),
+    prompt: z.string().min(1).max(32_000).optional(),
+  }),
   z.object({ type: z.literal("ping") }),
 ]);
 export type ClientFrame = z.infer<typeof clientFrame>;
@@ -288,6 +301,13 @@ export type ServerFrame =
    *  waiting on the user, `board` the Work board items that need them (in
    *  `board`). Devices that don't know it ignore it. */
   | { type: "ask"; ask: AskKind; tabId: string; board?: BoardDigestItem[] }
+  /** Answers `board`. */
+  | { type: "board"; items: BoardItem[] }
+  /** Answers `projects`. */
+  | { type: "projects"; projects: ProjectInfo[] }
+  /** Answers `openSession`: the tab is on its way (or `error` says why not); it
+   *  shows up in `sessions` once it runs. */
+  | { type: "sessionOpened"; requestId?: string; folder: string | null }
   | { type: "pong" };
 
 export type AskKind = "status" | "waiting" | "board";
@@ -304,6 +324,53 @@ export interface BoardDigestItem {
   tabId: string | null;
 }
 
+export type BoardLane = "needs-you" | "in-progress" | "waiting" | "todo";
+
+/** One Work board item: a ticket with its PRs, or a PR, issue or review on its own. */
+export interface BoardItem {
+  id: string;
+  kind: "ticket" | "pr" | "issue" | "review";
+  title: string;
+  url: string;
+  lane: BoardLane;
+  ticket: {
+    key: string;
+    /** the board's status name, e.g. "Peer review" */
+    status: string;
+    summary: string;
+    assignee: string | null;
+  } | null;
+  prs: {
+    number: number;
+    title: string;
+    /** owner/repo */
+    repo: string;
+    branch: string;
+    review: string;
+    approvals: number;
+    draft: boolean;
+    /** e.g. { state: "failed", name: "BugfixBuild #9" } */
+    ci: { state: string; name: string } | null;
+  }[];
+  /** why it needs the user, most pressing first; empty when it doesn't */
+  reasons: string[];
+  /** the tab working on it, when one is open */
+  tabId: string | null;
+  /** epoch ms of the newest change */
+  updated: number;
+  /** `openSession` with this item's id can start it */
+  startable: boolean;
+}
+
+/** A local project folder sessions can start in. */
+export interface ProjectInfo {
+  folder: string;
+  /** owner/repo of its remote */
+  repo: string;
+  /** a git worktree of another folder here */
+  worktree: boolean;
+}
+
 export type CompanionErrorCode =
   | "protocol"
   | "unauthenticated"
@@ -315,7 +382,9 @@ export type CompanionErrorCode =
   | "no-screen"
   | "no-such-prompt"
   | "undeliverable"
-  | "malformed";
+  | "malformed"
+  /** `openSession` could not start one; `message` says why */
+  | "not-started";
 
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
 export function parseClientFrame(raw: string): ClientFrame | null {

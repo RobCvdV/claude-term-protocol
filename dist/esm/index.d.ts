@@ -235,6 +235,16 @@ export declare const clientFrame: z.ZodDiscriminatedUnion<[z.ZodObject<{
     type: z.ZodLiteral<"focus">;
     tabId: z.ZodString;
 }, z.core.$strip>, z.ZodObject<{
+    type: z.ZodLiteral<"board">;
+}, z.core.$strip>, z.ZodObject<{
+    type: z.ZodLiteral<"projects">;
+}, z.core.$strip>, z.ZodObject<{
+    type: z.ZodLiteral<"openSession">;
+    requestId: z.ZodOptional<z.ZodString>;
+    folder: z.ZodOptional<z.ZodString>;
+    itemId: z.ZodOptional<z.ZodString>;
+    prompt: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>, z.ZodObject<{
     type: z.ZodLiteral<"ping">;
 }, z.core.$strip>], "type">;
 export type ClientFrame = z.infer<typeof clientFrame>;
@@ -322,6 +332,23 @@ export type ServerFrame =
     ask: AskKind;
     tabId: string;
     board?: BoardDigestItem[];
+}
+/** Answers `board`. */
+ | {
+    type: "board";
+    items: BoardItem[];
+}
+/** Answers `projects`. */
+ | {
+    type: "projects";
+    projects: ProjectInfo[];
+}
+/** Answers `openSession`: the tab is on its way (or `error` says why not); it
+ *  shows up in `sessions` once it runs. */
+ | {
+    type: "sessionOpened";
+    requestId?: string;
+    folder: string | null;
 } | {
     type: "pong";
 };
@@ -337,6 +364,55 @@ export interface BoardDigestItem {
     /** the tab working on it, when one is open */
     tabId: string | null;
 }
-export type CompanionErrorCode = "protocol" | "unauthenticated" | "bad-pairing-code" | "bad-signature" | "unknown-device" | "no-such-session" | "no-transcript" | "no-screen" | "no-such-prompt" | "undeliverable" | "malformed";
+export type BoardLane = "needs-you" | "in-progress" | "waiting" | "todo";
+/** One Work board item: a ticket with its PRs, or a PR, issue or review on its own. */
+export interface BoardItem {
+    id: string;
+    kind: "ticket" | "pr" | "issue" | "review";
+    title: string;
+    url: string;
+    lane: BoardLane;
+    ticket: {
+        key: string;
+        /** the board's status name, e.g. "Peer review" */
+        status: string;
+        summary: string;
+        assignee: string | null;
+    } | null;
+    prs: {
+        number: number;
+        title: string;
+        /** owner/repo */
+        repo: string;
+        branch: string;
+        review: string;
+        approvals: number;
+        draft: boolean;
+        /** e.g. { state: "failed", name: "BugfixBuild #9" } */
+        ci: {
+            state: string;
+            name: string;
+        } | null;
+    }[];
+    /** why it needs the user, most pressing first; empty when it doesn't */
+    reasons: string[];
+    /** the tab working on it, when one is open */
+    tabId: string | null;
+    /** epoch ms of the newest change */
+    updated: number;
+    /** `openSession` with this item's id can start it */
+    startable: boolean;
+}
+/** A local project folder sessions can start in. */
+export interface ProjectInfo {
+    folder: string;
+    /** owner/repo of its remote */
+    repo: string;
+    /** a git worktree of another folder here */
+    worktree: boolean;
+}
+export type CompanionErrorCode = "protocol" | "unauthenticated" | "bad-pairing-code" | "bad-signature" | "unknown-device" | "no-such-session" | "no-transcript" | "no-screen" | "no-such-prompt" | "undeliverable" | "malformed"
+/** `openSession` could not start one; `message` says why */
+ | "not-started";
 /** Parse an untrusted frame. Returns null rather than throwing on anything odd. */
 export declare function parseClientFrame(raw: string): ClientFrame | null;
